@@ -65,12 +65,35 @@ BufMgr::~BufMgr() {
 
 const Status BufMgr::allocBuf(int & frame) 
 {
+    int pinned = 0;
+    BufDesc *currBuf;
 
+    while (true) {
+        if (pinned >= numBufs)
+            return BUFFEREXCEEDED;
+        
+        advanceClock();
+        currBuf = &bufTable[clockHand];
+        
+        if (currBuf->valid) {
+            if (currBuf->refbit) 
+                currBuf->refbit = false;
+            else {
+                if (currBuf->pinCnt == 0) {
+                    if (currBuf->dirty) {
+                        if (currBuf->file->writePage(currBuf->pageNo, &(bufPool[clockHand])) != OK)
+                            return UNIXERR;
+                    } else
+                        break;
+                } else 
+                    ++pinned;
+            }
+        } else 
+            break;
+    }
 
-
-
-
-
+    frame = currBuf->frameNo;
+    return OK;
 }
 
 	
@@ -87,11 +110,20 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
 const Status BufMgr::unPinPage(File* file, const int PageNo, 
 			       const bool dirty) 
 {
-
-
-
-
-
+    int frame;
+    BufDesc *buf;
+    
+    if (hashTable->lookup(file, PageNo, frame) != OK)
+        return HASHNOTFOUND;
+    
+    buf = &bufTable[frame];
+    
+    if (buf->pinCnt == 0)
+        return PAGENOTPINNED;
+    
+    --(buf->pinCnt);
+    buf->dirty = dirty;
+    return OK;
 }
 
 const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page) 
