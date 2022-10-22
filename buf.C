@@ -65,12 +65,14 @@ BufMgr::~BufMgr() {
 
 const Status BufMgr::allocBuf(int & frame) 
 {
-    int pinned = 0;
+    int pinned, initPos = clockHand;
     BufDesc *currBuf;
 
     while (true) {
-        if (pinned >= numBufs)
+        if (initPos == clockHand && pinned >= numBufs)
             return BUFFEREXCEEDED;
+        else 
+            pinned = 0;
         
         advanceClock();
         currBuf = &bufTable[clockHand];
