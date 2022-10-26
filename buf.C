@@ -65,7 +65,8 @@ BufMgr::~BufMgr() {
 
 const Status BufMgr::allocBuf(int & frame) 
 {
-    int pinned, initPos = clockHand;
+    int pinned;
+    unsigned int initPos = clockHand;
     BufDesc *currBuf;
 
     while (true) {
