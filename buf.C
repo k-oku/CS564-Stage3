@@ -100,12 +100,84 @@ const Status BufMgr::allocBuf(int & frame)
 }
 
 	
+/*
+readPage method description here
+
+Inputs:
+File* file
+const int PageNo
+Page*& page
+
+Returns:
+OK if no errors occurred
+UNIXERR if a unix error occurred 
+BUFFEREXCEEDED if all buffer frames are pinned
+HASHTBLERROR if a hash table error occurred 
+*/
+	
 const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
-{
+{   
+    // Brandon's method
 
+    int frame;
 
+    // first, check whether page is in buffer pool.
 
+    Status statusCheck = OK; // to check status, similar usage to other funcs
+    statusCheck = hashTable->lookup(file, PageNo, frame); // should set "frame" int
 
+    if (statusCheck == HASHTBLERROR) { // make sure lookup works
+        return HASHTBLERROR;
+    } 
+    else if (statusCheck == HASHNOTFOUND) { // check if page is in buffer pool
+        // page not in buffer pool, case 1
+        // call allocBuf to alloc buffer frame
+        statusCheck = allocBuf(frame);
+        if (statusCheck != OK) {
+            return statusCheck; // ought to be UNIXERR or BUFFEREXCEEDED
+        }
+        // buffer frame alloc'd
+        // now call file->readPage() 
+        
+        statusCheck = file->readPage(PageNo, page);
+
+        if (statusCheck != OK) {
+            return statusCheck; // something wrong with readpage 
+        }
+
+        // insert page into hashtable
+
+        statusCheck = hashTable->insert(file, PageNo, frame);
+
+        if (statusCheck != OK) {
+            return statusCheck; // ought to be HASHTBLERROR
+        }
+
+        // invoke Set() on frame to set it up properly, leaving pinCnt for page set to 1.
+        BufDesc& currBufTable = bufTable[PageNo];
+
+        currBufTable.Set(file, PageNo);
+
+        // return a pointer to the frame containing the page via the page parameter
+        
+        page = &bufPool[frame];
+
+    } else {
+        // page is in buffer pool, case 2
+        BufDesc *buf = &bufTable[frame];
+        // set appropriate refbit
+
+        buf->refbit = true; // ref'd recently (read), so "true"
+
+        // increment pinCnt for page
+
+        (buf->pinCnt)++;
+
+        // return pointer to frame containing page via page parameter
+        
+        page = &bufPool[frame];
+    }
+    return OK;
 
 }
 
