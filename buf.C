@@ -118,7 +118,7 @@ HASHTBLERROR if a hash table error occurred
 const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
 {   
     // Brandon's method
-    int frame;
+    int frame = 0;
     // first, check whether page is in buffer pool.
 
     Status statusCheck = OK; // to check status, similar usage to other funcs
@@ -147,19 +147,20 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
             return statusCheck; // ought to be HASHTBLERROR
         }
         // invoke Set() on frame to set it up properly, leaving pinCnt for page set to 1.
-        BufDesc& currBufTable = bufTable[PageNo];
+        BufDesc& currBufTable = bufTable[frame];
         currBufTable.Set(file, PageNo);
-
+        currBufTable.frameNo = frame; // need to update this as frame changed
+        bufTable[frame] = currBufTable;
         // return a pointer to the frame containing the page via the page parameter
         
         page = &bufPool[frame];
+
     } else {
         // page is in buffer pool, case 2
-        BufDesc *buf = &bufTable[frame];
         // set appropriate refbit
-        buf->refbit = true; // ref'd recently (read), so "true"
+        bufTable[frame].refbit = true; // ref'd recently (read), so "true"
         // increment pinCnt for page
-        (buf->pinCnt)++;
+        (bufTable[frame].pinCnt)++;
         // return pointer to frame containing page via page parameter
         page = &bufPool[frame];
     }
