@@ -149,7 +149,7 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
         }
         // buffer frame alloc'd
         // now call file->readPage() 
-        statusCheck = file->readPage(PageNo, page);
+        statusCheck = file->readPage(PageNo, &bufPool[frame]);
         if (statusCheck != OK) {
             return statusCheck; // something wrong with readpage 
         }
