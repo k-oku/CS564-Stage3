@@ -151,6 +151,7 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
         // now call file->readPage() 
         statusCheck = file->readPage(PageNo, &bufPool[frame]);
         if (statusCheck != OK) {
+	    disposePage(file, PageNo); // get rid of page read
             return statusCheck; // something wrong with readpage 
         }
         // insert page into hashtable
