@@ -101,14 +101,15 @@ const Status BufMgr::allocBuf(int & frame)
 
 	
 /*
-readPage method description here
+readPage reads a page that is either in the buffer pool or in the file.
 
-Inputs:
-File* file
-const int PageNo
-Page*& page
+@params:
+File* file: file ptr 
+const int PageNo: page # to be read
+Page*& page: pointer to page within the frame
 
 Returns:
+Status: OK, UNIXERR, BUFFEREXCEEDED, or HASHTBLERROR
 OK if no errors occurred
 UNIXERR if a unix error occurred 
 BUFFEREXCEEDED if all buffer frames are pinned
