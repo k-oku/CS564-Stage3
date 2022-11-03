@@ -193,7 +193,6 @@ const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page)
 {
     
     Status status;
-    Page* bufPool;
 
     //allocate empty page in file
     status = file->allocatePage(pageNo);
