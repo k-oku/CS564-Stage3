@@ -225,7 +225,7 @@ const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page)
             currBuf.Set(file, pageNum);
    
             //return pointer to the buffer frame allocated for the page
-            page = &bufPool[pageNum];
+            page = &bufPool[pageNo];
 
             //return page number of newly allocated page via pageNo
             pageNo = pageNum;
