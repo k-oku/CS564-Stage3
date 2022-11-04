@@ -62,7 +62,13 @@ BufMgr::~BufMgr() {
     delete [] bufPool;
 }
 
-
+/*
+* Allocate a buffer frame using the LRU approximation - clock - algorithm
+*
+* @param frame Reference to the allocated frame's number
+*
+* @return OK if successful, or BUFFEREXCEEDED if buffer limit was exceeded, or UNIXERR if encounterd an error in the I/O layer  
+*/
 const Status BufMgr::allocBuf(int & frame) 
 {
     int pinned = 0;
@@ -70,43 +76,47 @@ const Status BufMgr::allocBuf(int & frame)
     BufDesc *currBuf;
 
     while (true) {
-        if (initPos == clockHand && pinned >= numBufs) {
-            return BUFFEREXCEEDED;
-        } else {
-            //pinned = 0;
-        }
-            
+        // Check buffer limit every rotation
+        if (initPos == clockHand) {
+            if (pinned >= numBufs) {
+                return BUFFEREXCEEDED;
+            } else {
+                pinned = 0;
+            }        
+        } 
+
+        // Move to the next buffer frame
         advanceClock();
         currBuf = &bufTable[clockHand];
         
+        // Allocate frame
+        // Check if this frame is valid
         if (currBuf->valid) {
+            // Check if this frame was recently referenced
             if (currBuf->refbit) {
                 currBuf->refbit = false;
             } else {
+                // Check if this frame is pinned
                 if (currBuf->pinCnt == 0) {
+                    // Lazily write page if this frame is dirty
                     if (currBuf->dirty) {
                         if (currBuf->file->writePage(currBuf->pageNo, &(bufPool[clockHand])) != OK) {
                             return UNIXERR;
                         }
-                        currBuf->dirty = false;
-                        hashTable->remove(currBuf->file, currBuf->pageNo);
-                        //disposePage(currBuf->file, currBuf->pageNo);
-
-                    } else {
-                        hashTable->remove(currBuf->file, currBuf->pageNo);
-                        //disposePage(currBuf->file, currBuf->pageNo);
-                        break;
                     }
-                        
-                } else 
+                    // Remove frame's content from buffer
+                    hashTable->remove(currBuf->file, currBuf->pageNo);
+                    break;
+                } else {
                     ++pinned;
+                }
             }
         } else {
             break;
         }
-            
     }
-    currBuf->Clear();
+
+    // Assign the allocated frame number
     frame = currBuf->frameNo;
     return OK;
 }
@@ -182,13 +192,22 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page)
 
 }
 
-
+/*
+* Unpin a page's corresponding buffer frame and set its' dirty bit
+* 
+* @param file Pointer to the file whose page will be unpinned 
+* @param PageNo Number of the page that will be unpinned
+* @param dirty Indicate whether the frame was modified
+* 
+* @return OK if successful, or HASHNOTFOUND if the page isn't in the buffer, or PAGENOTPINNED if the frame is already unpinned
+*/
 const Status BufMgr::unPinPage(File* file, const int PageNo, 
 			       const bool dirty) 
 {
-    int frame = 0;
+    int frame;
     BufDesc *buf;
-    
+
+    // Find the page's buffer frame
     if (hashTable->lookup(file, PageNo, frame) != OK)
         return HASHNOTFOUND;
     
@@ -197,9 +216,11 @@ const Status BufMgr::unPinPage(File* file, const int PageNo,
     if (buf->pinCnt == 0)
         return PAGENOTPINNED;
     
+    // Unpin buffer frame
     --(buf->pinCnt);
 
-    if (dirty) { // if dirty, then set dirty bit
+    // If dirty, set dirty bit
+    if (dirty) { 
         buf->dirty = true;
     }
     
