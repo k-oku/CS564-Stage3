@@ -238,6 +238,18 @@ const Status BufMgr::unPinPage(File* file, const int PageNo,
     return OK;
 }
 
+/*
+* Allocate a page to corresponding buffer frame
+* @params file - pointer to file with page to be allocated
+* @params pageNo - reference to page number of file to be allocated
+* @params page - pointer by reference to page within frame
+*
+* @return OK if no errors occurred, UNIXERR if a Unix error occurred, BUFFEREXCEEDED if all buffer frames are pinned,
+* or HASHTBLEERROR if a hash table error occurred
+*
+* returns the page number of the newly allocated page to the caller via the pageNo parameter 
+* and a pointer to the buffer frame allocated for the page via the page parameter
+*/
 const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page) 
 {
     
