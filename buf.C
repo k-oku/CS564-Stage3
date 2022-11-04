@@ -73,7 +73,7 @@ const Status BufMgr::allocBuf(int & frame)
         if (initPos == clockHand && pinned >= numBufs) {
             return BUFFEREXCEEDED;
         } else {
-            pinned = 0;
+            //pinned = 0;
         }
             
         advanceClock();
