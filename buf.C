@@ -1,3 +1,14 @@
+/*
+* Brandon Frauenfeld, 907 708 3880, frauenfeld
+* Kath Oku, 907 869 6235, kmoku
+* Khai Bui, 907 264 9824, kmbui2
+*
+* This file is a part of the Buffer Manager for the database management system - Minirel -  
+* specified in Project Stage 3 description
+* 
+* buf.C implements the BufMgr class as declared in buf.h
+*/
+
 #include <memory.h>
 #include <unistd.h>
 #include <errno.h>
